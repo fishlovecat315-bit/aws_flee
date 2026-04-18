@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Table, Card, Select, Space, Button, Tag, Spin, Alert, Statistic, Row, Col, Tooltip } from 'antd'
-import { SyncOutlined } from '@ant-design/icons'
+import { Table, Card, Select, Space, Button, Tag, Spin, Alert, Statistic, Row, Col, Tooltip, Modal } from 'antd'
+import { SyncOutlined, QuestionCircleOutlined, TagsOutlined } from '@ant-design/icons'
 import type { ColumnsType } from 'antd/es/table'
 import client from '../api/client'
 
@@ -39,6 +39,10 @@ export default function CostDetail() {
   const [error, setError] = useState<string | null>(null)
   const [monthKeys, setMonthKeys] = useState<string[]>([])
   const [rows, setRows] = useState<RowData[]>([])
+  const [publicData, setPublicData] = useState<RowData[]>([])
+  const [unclassifiedData, setUnclassifiedData] = useState<RowData[]>([])
+  const [publicVisible, setPublicVisible] = useState(false)
+  const [unclassifiedVisible, setUnclassifiedVisible] = useState(false)
 
   useEffect(() => { fetchData() }, [accountName, months])  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -49,9 +53,11 @@ export default function CostDetail() {
       const res = await client.get('/costs/business-summary', {
         params: { account_name: accountName, months },
       })
-      const { months: mks, data } = res.data
+      const { months: mks, data, public_data, unclassified_data } = res.data
       setMonthKeys(mks)
       setRows(data.map((r: RowData, i: number) => ({ ...r, key: String(i) })))
+      setPublicData((public_data || []).map((r: RowData, i: number) => ({ ...r, key: `pub-${i}` })))
+      setUnclassifiedData((unclassified_data || []).map((r: RowData, i: number) => ({ ...r, key: `unc-${i}` })))
     } catch (e) {
       setError(e instanceof Error ? e.message : '加载失败')
     } finally {
@@ -201,6 +207,36 @@ export default function CostDetail() {
 
       <Card title={`费用明细 — ${accountName}账号`}>
         <Spin spinning={loading}>
+          {/* 两个入口按钮，位于表格上方 */}
+          <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+            <Button
+              type="primary"
+              ghost
+              icon={<QuestionCircleOutlined />}
+              onClick={() => setPublicVisible(true)}
+              style={{ flex: 1, height: 44 }}
+            >
+              Public分摊(未分类) — 无 Product Tag 资源
+              {publicData.length > 0 && monthKeys.length > 0 && (
+                <Tag color="cyan" style={{ marginLeft: 8 }}>
+                  ${publicData.reduce((s, r) => s + (r.month_costs[monthKeys[monthKeys.length - 1]] ?? 0), 0).toFixed(0)}
+                </Tag>
+              )}
+            </Button>
+            <Button
+              type="default"
+              icon={<TagsOutlined />}
+              onClick={() => setUnclassifiedVisible(true)}
+              style={{ flex: 1, height: 44 }}
+            >
+              已打Tag未确定归属
+              {unclassifiedData.length > 0 && monthKeys.length > 0 && (
+                <Tag color="orange" style={{ marginLeft: 8 }}>
+                  {unclassifiedData.length} 项 / ${unclassifiedData.reduce((s, r) => s + (r.month_costs[monthKeys[monthKeys.length - 1]] ?? 0), 0).toFixed(0)}
+                </Tag>
+              )}
+            </Button>
+          </div>
           <Table<RowData>
             columns={columns}
             dataSource={rows}
@@ -211,6 +247,106 @@ export default function CostDetail() {
           />
         </Spin>
       </Card>
+
+      {/* Public分摊(未分类) 弹窗 */}
+      <Modal
+        title="Public分摊(未分类) — 无 Product Tag 资源"
+        open={publicVisible}
+        onCancel={() => setPublicVisible(false)}
+        footer={null}
+        width={1000}
+      >
+        <Table<RowData>
+          columns={[
+            { title: '分摊部门', dataIndex: 'biz_name', key: 'biz_name', width: 150 },
+            ...monthKeys.map(ym => ({
+              title: ym, key: ym, width: 110, align: 'right' as const,
+              render: (_: unknown, record: RowData) => {
+                const v = record.month_costs[ym] ?? 0
+                return v > 0.005 ? `$${v.toFixed(2)}` : '-'
+              },
+            })),
+            {
+              title: '较上月', dataIndex: 'mom_change', key: 'mom_change', width: 100, align: 'right' as const,
+              render: (v: number) => {
+                if (Math.abs(v) < 0.01) return '-'
+                const color = v > 0 ? '#f5222d' : '#52c41a'
+                return <span style={{ color }}>{v > 0 ? '+' : ''}${v.toFixed(2)}</span>
+              },
+            },
+          ]}
+          dataSource={publicData}
+          pagination={false}
+          size="small"
+          bordered
+          summary={() => {
+            const totals: Record<string, number> = {}
+            monthKeys.forEach(ym => { totals[ym] = publicData.reduce((s, r) => s + (r.month_costs[ym] ?? 0), 0) })
+            return (
+              <Table.Summary.Row>
+                <Table.Summary.Cell index={0}><strong>合计</strong></Table.Summary.Cell>
+                {monthKeys.map((ym, i) => (
+                  <Table.Summary.Cell key={ym} index={i + 1} align="right">
+                    <strong>${totals[ym].toFixed(2)}</strong>
+                  </Table.Summary.Cell>
+                ))}
+                <Table.Summary.Cell index={monthKeys.length + 1} />
+              </Table.Summary.Row>
+            )
+          }}
+        />
+      </Modal>
+
+      {/* 已打Tag未确定归属 弹窗 */}
+      <Modal
+        title="已打Tag未确定归属 — 有 Product Tag 但未匹配已知业务"
+        open={unclassifiedVisible}
+        onCancel={() => setUnclassifiedVisible(false)}
+        footer={null}
+        width={1000}
+      >
+        <Table<RowData>
+          columns={[
+            { title: '原始 Tag', dataIndex: 'tag_value', key: 'tag_value', width: 200,
+              render: (v: string | null) => <span style={{ fontSize: 12 }}>{v ?? '-'}</span> },
+            { title: '部门', dataIndex: 'department', key: 'department', width: 80 },
+            ...monthKeys.map(ym => ({
+              title: ym, key: ym, width: 110, align: 'right' as const,
+              render: (_: unknown, record: RowData) => {
+                const v = record.month_costs[ym] ?? 0
+                return v > 0.005 ? `$${v.toFixed(2)}` : '-'
+              },
+            })),
+            {
+              title: '较上月', dataIndex: 'mom_change', key: 'mom_change', width: 100, align: 'right' as const,
+              render: (v: number) => {
+                if (Math.abs(v) < 0.01) return '-'
+                const color = v > 0 ? '#f5222d' : '#52c41a'
+                return <span style={{ color }}>{v > 0 ? '+' : ''}${v.toFixed(2)}</span>
+              },
+            },
+          ]}
+          dataSource={unclassifiedData}
+          pagination={{ pageSize: 20, showSizeChanger: true }}
+          size="small"
+          bordered
+          summary={() => {
+            const totals: Record<string, number> = {}
+            monthKeys.forEach(ym => { totals[ym] = unclassifiedData.reduce((s, r) => s + (r.month_costs[ym] ?? 0), 0) })
+            return (
+              <Table.Summary.Row>
+                <Table.Summary.Cell index={0} colSpan={2}><strong>合计</strong></Table.Summary.Cell>
+                {monthKeys.map((ym, i) => (
+                  <Table.Summary.Cell key={ym} index={i + 2} align="right">
+                    <strong>${totals[ym].toFixed(2)}</strong>
+                  </Table.Summary.Cell>
+                ))}
+                <Table.Summary.Cell index={monthKeys.length + 2} />
+              </Table.Summary.Row>
+            )
+          }}
+        />
+      </Modal>
     </div>
   )
 }

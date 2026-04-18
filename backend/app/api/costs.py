@@ -297,4 +297,19 @@ async def get_business_summary(
         -x["month_costs"].get(month_keys[-1], 0)
     ))
 
-    return {"months": month_keys, "data": result}
+    # 分离：主表格展示已确认归属 + Public 分摊，其他单独返回
+    KNOWN_GROUPS = {"共用", "SmartProduct", "Community", "AI", "Phone", "Public"}
+    main_data = [r for r in result if r["biz_group"] in KNOWN_GROUPS]
+    # 「其他」= 有 Tag 但未匹配已知业务 → 归入「已打Tag未确定归属」
+    unclassified_data = [r for r in result if r["biz_group"] == "其他"]
+
+    # Public 无 Tag 资源的详细明细（从 raw_cost_records 查询）
+    # 这里返回 public 汇总数据供弹窗使用
+    public_summary = [r for r in result if r["biz_group"] == "Public"]
+
+    return {
+        "months": month_keys,
+        "data": main_data,
+        "public_data": public_summary,
+        "unclassified_data": unclassified_data,
+    }
