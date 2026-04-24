@@ -60,6 +60,7 @@ class CostSyncService:
             TimePeriod={"Start": start.isoformat(), "End": end.isoformat()},
             Granularity="DAILY",
             GroupBy=[
+                {"Type": "DIMENSION", "Key": "SERVICE"},
                 {"Type": "TAG", "Key": "Product"},
             ],
             Metrics=["BlendedCost"],
@@ -89,13 +90,16 @@ class CostSyncService:
                 record_date = date.fromisoformat(time_period["TimePeriod"]["Start"])
                 for group in time_period.get("Groups", []):
                     keys = group.get("Keys", [])
-                    raw_tag = keys[0] if keys else ""
+                    # keys[0] is SERVICE, keys[1] is Product TAG
+                    service_name = keys[0] if len(keys) > 0 else "Unknown"
+                    raw_tag = keys[1] if len(keys) > 1 else ""
+                    
                     # Product tag 格式: "Product$value" 或 "Product$"（无标签）
                     if "$" in raw_tag:
                         raw_value = raw_tag.split("$", 1)[1].strip() or None
                     else:
                         raw_value = None
-                    # 保存原始 Product tag value，不做标准化
+                    
                     tag_value = raw_value
                     amount_str = (
                         group.get("Metrics", {}).get("BlendedCost", {}).get("Amount", "0")
@@ -104,7 +108,7 @@ class CostSyncService:
                         "account_id": account_id,
                         "account_name": account_name,
                         "date": record_date,
-                        "service": "ALL",
+                        "service": service_name,
                         "tag_key": "Product" if tag_value else None,
                         "tag_value": tag_value,
                         "amount_usd": Decimal(amount_str),

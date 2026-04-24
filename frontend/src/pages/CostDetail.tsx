@@ -12,8 +12,8 @@ const GROUP_COLORS: Record<string, string> = {
   'AI': 'purple', 'Phone': 'gold', 'Public': 'cyan', '其他': 'default',
 }
 const GROUP_BG: Record<string, string> = {
-  '共用': '#f6ffed', 'SmartProduct': '#fff7e6', 'Community': '#e6f7ff',
-  'AI': '#f9f0ff', 'Phone': '#fffbe6', 'Public': '#e6fffb', '其他': '#fafafa',
+  '共用': 'rgba(82, 196, 26, 0.1)', 'SmartProduct': 'rgba(250, 140, 22, 0.1)', 'Community': 'rgba(24, 144, 255, 0.1)',
+  'AI': 'rgba(114, 46, 209, 0.1)', 'Phone': 'rgba(250, 173, 20, 0.1)', 'Public': 'rgba(19, 194, 194, 0.1)', '其他': 'rgba(255, 255, 255, 0.05)',
 }
 const DEPT_COLORS: Record<string, string> = {
   'Smart': 'orange', 'Phone': 'gold', 'AI': 'purple',
@@ -156,11 +156,11 @@ export default function CostDetail() {
       width: 110,
       align: 'right' as const,
       render: (v: number) => {
-        if (Math.abs(v) < 0.01) return <span style={{ color: '#ccc' }}>-</span>
-        const color = v > 0 ? '#f5222d' : '#52c41a'
-        const bg = v > 0 ? '#fff1f0' : '#f6ffed'
+        if (Math.abs(v) < 0.01) return <span style={{ color: 'var(--text-secondary)' }}>-</span>
+        const color = v > 0 ? 'var(--danger-color)' : 'var(--success-color)'
+        const bg = v > 0 ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)'
         return (
-          <span style={{ color, background: bg, padding: '2px 6px', borderRadius: 4, fontSize: 12 }}>
+          <span style={{ color, background: bg, padding: '4px 8px', borderRadius: 6, fontSize: 12, fontWeight: 500 }}>
             {v > 0 ? '+' : ''}${v.toFixed(2)}
           </span>
         )
@@ -170,33 +170,35 @@ export default function CostDetail() {
   ]
 
   return (
-    <div style={{ padding: 24 }}>
-      <Card style={{ marginBottom: 16 }}>
-        <Space wrap>
-          <Select value={accountName} onChange={setAccountName} style={{ width: 120 }}
-            options={ACCOUNTS.map(a => ({ label: a, value: a }))} />
-          <Select value={months} onChange={setMonths} style={{ width: 120 }}
+    <div style={{ padding: 24, paddingBottom: 48 }}>
+      <Card className="glass-panel" style={{ marginBottom: 24, border: 'none' }} bodyStyle={{ padding: '16px 24px' }}>
+        <Space wrap size="large">
+          <Select value={accountName} onChange={setAccountName} style={{ width: 140 }}
+            options={ACCOUNTS.map(a => ({ label: a, value: a }))} size="large" bordered={false} className="glass-select" />
+          <Select value={months} onChange={setMonths} style={{ width: 140 }}
             options={[
               { label: '近3个月', value: 3 }, { label: '近4个月', value: 4 },
               { label: '近6个月', value: 6 }, { label: '近12个月', value: 12 },
-            ]} />
-          <Button icon={<SyncOutlined />} onClick={fetchData}>刷新</Button>
+            ]} size="large" bordered={false} className="glass-select" />
+          <Button type="primary" icon={<SyncOutlined />} onClick={fetchData} className="btn-gradient" size="large">刷新数据</Button>
         </Space>
       </Card>
 
       {lastMonth && (
-        <Row gutter={16} style={{ marginBottom: 16 }}>
-          <Col span={6}>
-            <Card><Statistic title={`${lastMonth} 总费用`} value={totalLast} precision={2} prefix="$" /></Card>
+        <Row gutter={24} style={{ marginBottom: 24 }}>
+          <Col span={8}>
+            <Card className="glass-panel" style={{ border: 'none' }} bodyStyle={{ padding: '24px' }}>
+              <Statistic title={`${lastMonth} 总费用`} value={totalLast} precision={2} prefix="$" valueStyle={{ color: 'var(--text-primary)', fontWeight: 600 }} />
+            </Card>
           </Col>
-          <Col span={6}>
-            <Card>
+          <Col span={8}>
+            <Card className="glass-panel" style={{ border: 'none' }} bodyStyle={{ padding: '24px' }}>
               <Statistic
                 title={`较 ${prevMonth} 环比`}
                 value={Math.abs(totalLast - totalPrev)}
                 precision={2}
                 prefix={totalLast >= totalPrev ? '+$' : '-$'}
-                valueStyle={{ color: totalLast >= totalPrev ? '#f5222d' : '#52c41a' }}
+                valueStyle={{ color: totalLast >= totalPrev ? 'var(--danger-color)' : 'var(--success-color)', fontWeight: 600 }}
               />
             </Card>
           </Col>
@@ -205,33 +207,32 @@ export default function CostDetail() {
 
       {error && <Alert type="error" message={error} style={{ marginBottom: 16 }} showIcon closable onClose={() => setError(null)} />}
 
-      <Card title={`费用明细 — ${accountName}账号`}>
+      <Card className="glass-panel" title={<span style={{ fontSize: '18px', fontWeight: 600 }}>费用明细 — {accountName}账号</span>} style={{ border: 'none' }}>
         <Spin spinning={loading}>
           {/* 两个入口按钮，位于表格上方 */}
-          <div style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 24, marginBottom: 24 }}>
             <Button
-              type="primary"
-              ghost
               icon={<QuestionCircleOutlined />}
               onClick={() => setPublicVisible(true)}
-              style={{ flex: 1, height: 44 }}
+              className="btn-gradient"
+              style={{ flex: 1, height: 56, fontSize: '16px' }}
             >
-              Public分摊(未分类) — 无 Product Tag 资源
+              Public 分摊 (未分类) — 无 Product Tag 资源
               {publicData.length > 0 && monthKeys.length > 0 && (
-                <Tag color="cyan" style={{ marginLeft: 8 }}>
+                <Tag color="rgba(255,255,255,0.2)" style={{ marginLeft: 12, border: 'none', color: 'white', fontSize: '14px', padding: '4px 8px' }}>
                   ${publicData.reduce((s, r) => s + (r.month_costs[monthKeys[monthKeys.length - 1]] ?? 0), 0).toFixed(0)}
                 </Tag>
               )}
             </Button>
             <Button
-              type="default"
               icon={<TagsOutlined />}
               onClick={() => setUnclassifiedVisible(true)}
-              style={{ flex: 1, height: 44 }}
+              className="btn-glass"
+              style={{ flex: 1, height: 56, fontSize: '16px' }}
             >
-              已打Tag未确定归属
+              已打 Tag 未确定归属
               {unclassifiedData.length > 0 && monthKeys.length > 0 && (
-                <Tag color="orange" style={{ marginLeft: 8 }}>
+                <Tag color="var(--accent-color)" style={{ marginLeft: 12, border: 'none', fontSize: '14px', padding: '4px 8px' }}>
                   {unclassifiedData.length} 项 / ${unclassifiedData.reduce((s, r) => s + (r.month_costs[monthKeys[monthKeys.length - 1]] ?? 0), 0).toFixed(0)}
                 </Tag>
               )}
@@ -248,7 +249,6 @@ export default function CostDetail() {
         </Spin>
       </Card>
 
-      {/* Public分摊(未分类) 弹窗 */}
       <Modal
         title="Public分摊(未分类) — 无 Product Tag 资源"
         open={publicVisible}
@@ -256,9 +256,9 @@ export default function CostDetail() {
         footer={null}
         width={1000}
       >
-        <Table<RowData>
+        <Table<RowData & { allocation_desc?: string }>
           columns={[
-            { title: '分摊部门', dataIndex: 'biz_name', key: 'biz_name', width: 150 },
+            { title: '服务类型', dataIndex: 'biz_name', key: 'biz_name', width: 250 },
             ...monthKeys.map(ym => ({
               title: ym, key: ym, width: 110, align: 'right' as const,
               render: (_: unknown, record: RowData) => {
@@ -274,6 +274,10 @@ export default function CostDetail() {
                 return <span style={{ color }}>{v > 0 ? '+' : ''}${v.toFixed(2)}</span>
               },
             },
+            {
+              title: '费用分摊说明', dataIndex: 'allocation_desc', key: 'allocation_desc', width: 280,
+              render: (v: string | undefined) => <span style={{ fontSize: 12 }}>{v ?? '-'}</span>
+            },
           ]}
           dataSource={publicData}
           pagination={false}
@@ -284,7 +288,7 @@ export default function CostDetail() {
             monthKeys.forEach(ym => { totals[ym] = publicData.reduce((s, r) => s + (r.month_costs[ym] ?? 0), 0) })
             return (
               <Table.Summary.Row>
-                <Table.Summary.Cell index={0}><strong>合计</strong></Table.Summary.Cell>
+                <Table.Summary.Cell index={0}><strong>总计</strong></Table.Summary.Cell>
                 {monthKeys.map((ym, i) => (
                   <Table.Summary.Cell key={ym} index={i + 1} align="right">
                     <strong>${totals[ym].toFixed(2)}</strong>

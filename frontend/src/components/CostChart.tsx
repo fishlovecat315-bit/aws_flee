@@ -40,8 +40,8 @@ export default function CostChart({ data, granularity }: CostChartProps) {
         totals[item.department] = (totals[item.department] ?? 0) + Number(item.amount_usd)
       })
       return {
-        tooltip: { trigger: 'item', formatter: '{b}: ${c} ({d}%)' },
-        legend: { orient: 'vertical', left: 'left' },
+        tooltip: { trigger: 'item', formatter: '{b}: ${c} ({d}%)', backgroundColor: 'rgba(22, 27, 40, 0.8)', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#fff' } },
+        legend: { orient: 'vertical', left: 'left', textStyle: { color: '#e2e8f0' } },
         series: [
           {
             type: 'pie',
@@ -74,17 +74,18 @@ export default function CostChart({ data, granularity }: CostChartProps) {
     }))
 
     return {
-      tooltip: { trigger: 'axis' },
-      legend: { data: depts, bottom: 0 },
+      tooltip: { trigger: 'axis', backgroundColor: 'rgba(22, 27, 40, 0.8)', borderColor: 'rgba(255,255,255,0.1)', textStyle: { color: '#fff' } },
+      legend: { data: depts, bottom: 0, textStyle: { color: '#e2e8f0' } },
       grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
       xAxis: {
         type: 'category',
         data: dates,
-        axisLabel: { rotate: dates.length > 10 ? 30 : 0 },
+        axisLabel: { rotate: dates.length > 10 ? 30 : 0, color: '#94a3b8' },
       },
       yAxis: {
         type: 'value',
-        axisLabel: { formatter: '${value}' },
+        axisLabel: { formatter: '${value}', color: '#94a3b8' },
+        splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }
       },
       series,
     }
@@ -92,7 +93,8 @@ export default function CostChart({ data, granularity }: CostChartProps) {
 
   return (
     <Card
-      title="费用趋势图"
+      className="glass-panel"
+      title={<span style={{ fontSize: '18px', fontWeight: 600 }}>费用趋势图</span>}
       extra={
         <Radio.Group
           value={chartType}
@@ -106,7 +108,7 @@ export default function CostChart({ data, granularity }: CostChartProps) {
           <Radio.Button value="pie">饼图</Radio.Button>
         </Radio.Group>
       }
-      style={{ marginBottom: 16 }}
+      style={{ marginBottom: 24, border: 'none' }}
     >
       {data.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>暂无数据</div>

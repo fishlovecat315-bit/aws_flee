@@ -75,7 +75,7 @@ export default function CostSummaryTable({ summary }: CostSummaryTableProps) {
   ]
 
   return (
-    <Card title="费用汇总" style={{ marginBottom: 16 }}>
+    <Card className="glass-panel" title={<span style={{ fontSize: '18px', fontWeight: 600 }}>费用汇总</span>} style={{ marginBottom: 24, border: 'none' }}>
       <Tabs items={items} />
     </Card>
   )

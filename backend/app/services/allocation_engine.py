@@ -281,11 +281,47 @@ class AllocationEngine:
         if tag_norm and ("eks" in tag_norm or "ecs" in tag_norm):
             return [(d, a, tag, None) for d, a in self._split(amount, EKS_ECS_RATIOS)]
 
-        # 8. 无 Tag 或未匹配 → Public 规则（按 service 类型）
-        return self._alloc_main_public(tag, service, amount)
+        # 8. 无 Tag 或未匹配
+        if not tag:
+            # 无 Tag → Public 规则（按 service 类型）
+            return self._alloc_main_public(tag, service, amount)
+        else:
+            # 有 Tag 但未匹配到已知业务 → 归属于"其他"
+            return [("其他", amount, tag, None)]
 
     def _alloc_main_public(self, tag: Optional[str], service: str, amount: Decimal) -> list[tuple[str, Decimal, Optional[str], Optional[int]]]:
         """无 Tag 或未匹配的资源 → Public 兜底分摊。"""
+        service_lower = service.lower() if service else ""
+
+        # 1. EFS → Nacos
+        if "elasticfilesystem" in service_lower or "efs" in service_lower:
+            return [(d, a, tag, None) for d, a in self._split(amount, MAIN_SHARED.get("nacos", {}))]
+            
+        # 2. ECS/EKS
+        if "elasticcontainerservice" in service_lower or "ecs" in service_lower or "eks" in service_lower or "kubernetes" in service_lower:
+            return [(d, a, tag, None) for d, a in self._split(amount, EKS_ECS_RATIOS)]
+            
+        # 3. TTS
+        if "polly" in service_lower or "tts" in service_lower:
+            return [("Smart", amount, tag, None)]
+            
+        # 4. Athena & Glue
+        if "athena" in service_lower or "glue" in service_lower:
+            return [(d, a, tag, None) for d, a in self._split(amount, MAIN_SHARED.get("bi", {}))]
+            
+        # 5. ELB
+        if "elasticloadbalancing" in service_lower or "elb" in service_lower:
+            return [("Smart", amount, tag, None)]
+            
+        # 6. MongoDB / Marketplace
+        if "mongodb" in service_lower or "marketplace" in service_lower:
+            return [(d, a, tag, None) for d, a in self._alloc_mongodb(amount)]
+            
+        # 7. Redshift
+        if "redshift" in service_lower:
+            return [(d, a, tag, None) for d, a in self._split(amount, MAIN_SHARED.get("datacollection", {}))]
+
+        # 8. 其余无 Tag
         return [(d, a, tag, None) for d, a in self._split(amount, PUBLIC_FALLBACK_RATIOS)]
 
     def _alloc_mongodb(self, total: Decimal) -> list[tuple[str, Decimal]]:

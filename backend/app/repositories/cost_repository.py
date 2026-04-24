@@ -222,3 +222,57 @@ class CostRepository:
                 results[key]["month_costs"][ym] = Decimal(str(row.amount_usd)) if row.amount_usd else Decimal("0")
 
         return list(results.values())
+
+    async def get_public_raw_summary(
+        self,
+        months: list[tuple[int, int]],
+        account_name: str | None = None,
+    ) -> list[dict]:
+        """
+        按 Service 汇总多个月的 Public 费用（无 Product Tag 的资源）。
+        返回 [{service, account_name, month_costs: {YYYY-MM: amount}}, ...]
+        """
+        from backend.app.models.models import RawCostRecord
+        from datetime import date as date_type
+        import calendar
+
+        results: dict[tuple, dict] = {}
+
+        for year, month in months:
+            last_day = calendar.monthrange(year, month)[1]
+            start = date_type(year, month, 1)
+            end = date_type(year, month, last_day)
+            ym = f"{year}-{month:02d}"
+
+            query = (
+                select(
+                    RawCostRecord.account_name,
+                    RawCostRecord.service,
+                    func.sum(RawCostRecord.amount_usd).label("amount_usd"),
+                )
+                .where(
+                    RawCostRecord.date >= start,
+                    RawCostRecord.date <= end,
+                    (RawCostRecord.tag_value == None) | (RawCostRecord.tag_value == ""),
+                )
+            )
+            if account_name:
+                query = query.where(RawCostRecord.account_name == account_name)
+
+            query = query.group_by(
+                RawCostRecord.account_name,
+                RawCostRecord.service,
+            )
+
+            result = await self.db.execute(query)
+            for row in result.all():
+                key = (row.account_name, row.service)
+                if key not in results:
+                    results[key] = {
+                        "account_name": row.account_name,
+                        "service": row.service or "Unknown",
+                        "month_costs": {},
+                    }
+                results[key]["month_costs"][ym] = Decimal(str(row.amount_usd)) if row.amount_usd else Decimal("0")
+
+        return list(results.values())

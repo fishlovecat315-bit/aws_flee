@@ -17,21 +17,22 @@ export default function Layout() {
   ]
 
   return (
-    <AntLayout style={{ minHeight: '100vh' }}>
-      <Header style={{ color: 'white', fontSize: 18, fontWeight: 'bold' }}>
-        Nothing AWS 费用统计平台
+    <AntLayout style={{ minHeight: '100vh', background: 'transparent' }}>
+      <Header className="glass-header" style={{ color: 'white', fontSize: 18, fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>
+        <span style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '22px' }}>Nothing</span>
+        <span style={{ marginLeft: 8, opacity: 0.9 }}>AWS 费用统计</span>
       </Header>
-      <AntLayout>
-        <Sider width={200}>
+      <AntLayout style={{ background: 'transparent' }}>
+        <Sider width={220} className="glass-sider">
           <Menu
             mode="inline"
             selectedKeys={[location.pathname]}
             items={menuItems}
             onClick={({ key }) => navigate(key)}
-            style={{ height: '100%' }}
+            style={{ height: '100%', paddingTop: 16 }}
           />
         </Sider>
-        <Content style={{ padding: 24 }}>
+        <Content className="main-content">
           <Outlet />
         </Content>
       </AntLayout>

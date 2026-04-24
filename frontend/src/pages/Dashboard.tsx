@@ -180,8 +180,8 @@ export default function Dashboard() {
             children: (
               <Spin spinning={dailyLoading}>
                 {/* 当月工具栏 */}
-                <Card style={{ marginBottom: 16 }}>
-                  <Space wrap>
+                <Card className="glass-panel" style={{ marginBottom: 24, border: 'none' }} bodyStyle={{ padding: '16px 24px' }}>
+                  <Space wrap size="large">
                     <DatePicker.RangePicker
                       value={dailyDateRange}
                       onChange={(vals) => {
@@ -191,23 +191,23 @@ export default function Dashboard() {
                       disabledDate={(d) => d.isAfter(now) || d.isBefore(now.startOf('month').subtract(1, 'day'))}
                     />
                     {filterBar(dailyDept, setDailyDept, dailyAccount, setDailyAccount)}
-                    <Button icon={<SyncOutlined />} onClick={loadCurrentMonth}>刷新</Button>
+                    <Button type="primary" icon={<SyncOutlined />} onClick={loadCurrentMonth} className="btn-gradient" size="large">刷新数据</Button>
                   </Space>
                 </Card>
 
-                <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Row gutter={24} style={{ marginBottom: 24 }}>
                   <Col span={8}>
-                    <Card><Statistic title="当月累计费用" value={dailyTotal} precision={2} prefix="$" /></Card>
+                    <Card className="glass-panel" style={{ border: 'none' }} bodyStyle={{ padding: '24px' }}><Statistic title="当月累计费用" value={dailyTotal} precision={2} prefix="$" valueStyle={{ color: 'var(--text-primary)', fontWeight: 600 }} /></Card>
                   </Col>
                   <Col span={8}>
-                    <Card><Statistic title="数据天数" value={new Set(dailyData.map(r => r.date)).size} suffix="天" /></Card>
+                    <Card className="glass-panel" style={{ border: 'none' }} bodyStyle={{ padding: '24px' }}><Statistic title="数据天数" value={new Set(dailyData.map(r => r.date)).size} suffix="天" valueStyle={{ color: 'var(--text-primary)', fontWeight: 600 }} /></Card>
                   </Col>
                 </Row>
 
                 <CostChart data={dailyData} granularity="daily" />
                 {dailySummary && <CostSummaryTable summary={dailySummary} />}
 
-                <Card title="每日费用明细" style={{ marginTop: 16 }}>
+                <Card className="glass-panel" title={<span style={{ fontSize: '18px', fontWeight: 600 }}>每日费用明细</span>} style={{ marginTop: 24, border: 'none' }}>
                   <Table<DailyCostItem>
                     rowKey={(r) => `${r.date}-${r.department}-${r.account_name}-${r.tag_value}`}
                     columns={dailyColumns}
@@ -225,8 +225,8 @@ export default function Dashboard() {
             children: (
               <Spin spinning={histLoading}>
                 {/* 历史工具栏 */}
-                <Card style={{ marginBottom: 16 }}>
-                  <Space wrap>
+                <Card className="glass-panel" style={{ marginBottom: 24, border: 'none' }} bodyStyle={{ padding: '16px 24px' }}>
+                  <Space wrap size="large">
                     <Select
                       value={histMonth}
                       onChange={setHistMonth}
@@ -234,13 +234,13 @@ export default function Dashboard() {
                       options={historyMonthOptions}
                     />
                     {filterBar(histDept, setHistDept, histAccount, setHistAccount)}
-                    <Button icon={<SyncOutlined />} onClick={loadHistoryMonth}>刷新</Button>
+                    <Button type="primary" icon={<SyncOutlined />} onClick={loadHistoryMonth} className="btn-gradient" size="large">刷新数据</Button>
                   </Space>
                 </Card>
 
-                <Row gutter={16} style={{ marginBottom: 16 }}>
+                <Row gutter={24} style={{ marginBottom: 24 }}>
                   <Col span={8}>
-                    <Card><Statistic title="月度总费用" value={histTotal} precision={2} prefix="$" /></Card>
+                    <Card className="glass-panel" style={{ border: 'none' }} bodyStyle={{ padding: '24px' }}><Statistic title="月度总费用" value={histTotal} precision={2} prefix="$" valueStyle={{ color: 'var(--text-primary)', fontWeight: 600 }} /></Card>
                   </Col>
                 </Row>
 
@@ -248,7 +248,7 @@ export default function Dashboard() {
                 <CostChart data={histData} granularity="monthly" />
                 {histSummary && <CostSummaryTable summary={histSummary} />}
 
-                <Card title="月度费用汇总（按部门）" style={{ marginTop: 16 }}>
+                <Card className="glass-panel" title={<span style={{ fontSize: '18px', fontWeight: 600 }}>月度费用汇总（按部门）</span>} style={{ marginTop: 24, border: 'none' }}>
                   <Table<MonthlyCostItem>
                     rowKey={(r) => `${r.year_month}-${r.department}`}
                     columns={monthlyColumns}

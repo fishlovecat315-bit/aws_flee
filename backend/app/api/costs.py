@@ -304,8 +304,39 @@ async def get_business_summary(
     unclassified_data = [r for r in result if r["biz_group"] == "其他"]
 
     # Public 无 Tag 资源的详细明细（从 raw_cost_records 查询）
-    # 这里返回 public 汇总数据供弹窗使用
-    public_summary = [r for r in result if r["biz_group"] == "Public"]
+    public_raw_rows = await repo.get_public_raw_summary(months=month_list, account_name=account_name)
+    public_summary = []
+    
+    def get_alloc_desc(service: str) -> str:
+        s = service.lower()
+        if "elasticfilesystem" in s or "efs" in s: return "归属Nacos"
+        if "elastic container service for kubernetes" in s or "eks" in s: return "由nothing-x、share-wiget、生成式wiget、essential-space 4个业务均摊"
+        if "elastic container service" in s and "kubernetes" not in s: return "由nothing-x、share-wiget、生成式wiget、essential-space 4个业务均摊"
+        if "tts" in s or "polly" in s: return "归属TTS"
+        if "athena" in s: return "归属BI"
+        if "glue" in s: return "归属BI"
+        if "elasticloadbalancing" in s or "elb" in s or "elastic load balancing" in s: return "归属Nothing-X"
+        if "redshift" in s: return "归属DataCollection"
+        if "mongodb" in s or "documentdb" in s: return "MongoDB基础费用$2500由Nothing-x、sharedwidget二项业务均摊，MongoDB超出部分统一归于Nothing-x"
+        if "apigateway" in s or "api gateway" in s: return "归属DataCollection"
+        if "ec2" in s and "container registry" not in s: return "Phone:Smart:IT:Community = 10:6:1:1 分摊"
+        if "savings plans" in s: return "Phone:Smart = 3:7 分摊"
+        if "relational database" in s: return "Phone:Smart = 3:7 分摊"
+        return "归属IT"
+
+    for r in public_raw_rows:
+        costs = r["month_costs"]
+        last = costs.get(month_keys[-1], 0)
+        prev = costs.get(month_keys[-2], 0) if len(month_keys) >= 2 else 0
+        service = r["service"]
+        public_summary.append({
+            "biz_name": service,
+            "month_costs": costs,
+            "mom_change": round(last - prev, 4),
+            "allocation_desc": get_alloc_desc(service)
+        })
+
+    public_summary.sort(key=lambda x: x["month_costs"].get(month_keys[-1], 0), reverse=True)
 
     return {
         "months": month_keys,
